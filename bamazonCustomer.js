@@ -57,7 +57,7 @@ function questions() {
         switch (answer.action) {
 
             case "1":
-                transactions();
+                trans1();
                 break;
 
             case "2":
@@ -100,19 +100,20 @@ function questions() {
 
     });
 
-
 }
 
-function transactions() {
+function trans1() {
 
     inquirer.prompt({
         name: "product",
         type: "input",
-        message: "How many unit would you like?"
+        message: "How many units would you like?"
     }).then(function (answer) {
 
-        var query = "UPDATE products SET stock_quantity = ? WHERE ?";
-        connection.query(query, { stock_quantity: answer.stock_quantity }, function (err, res) {
+        var query = "UPDATE products SET ? WHERE ?";
+        connection.query(query, function (err, res) {
+
+            if (err) throw err;
 
             for (var i = 0; i < res.length; i++) {
 
@@ -135,3 +136,36 @@ function transactions() {
 }
 
 
+// var query = connection.query(
+
+//     "UPDATE products SET ? WHERE ?",
+
+//     [
+//         {
+//             stock_quantity: this - answer
+//         },
+
+//         {
+//             item_ID: this.answer
+//         }
+//     ],
+//     function (err, res) {
+
+//         if (err) throw err;
+
+//         for (var i = 0; i < res.length; i++) {
+
+//             if (answer > this.res[i].stock_quantity) {
+
+//                 console.log("Sorry, we dont have that many units.");
+
+//             } else {
+
+//                 console.log(this.res[i].product_name + this.res[i].price * answer);
+
+//             }
+
+//         }
+
+//     }
+// )
