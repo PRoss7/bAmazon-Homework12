@@ -1,7 +1,6 @@
 var mysql = require("mysql");
 var prompt = require("prompt");
 var Table = require("cli-table");
-// var password = require("./password/password.js");
 
 var connection = mysql.createConnection({
     host: "localhost",
