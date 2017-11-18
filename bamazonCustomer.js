@@ -1,10 +1,11 @@
 var mysql = require("mysql");
-var inquirer = require("inquirer");
+var prompt = require("prompt");
+var Table = require("cli-table");
+// var password = require("./password/password.js");
 
 var connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
-
     // Your username
     user: "root",
 
@@ -13,119 +14,92 @@ var connection = mysql.createConnection({
     database: "bamazon_DB"
 });
 
-connection.connect(function (err) {
+var purchased = [];
+
+
+connection.connect();
+
+connection.query("SELECT item_id, product_name, price FROM products", function (err, res) {
 
     if (err) throw err;
 
-    console.log("connected as id " + connection.threadId);
+    var table = new Table({
+        head: ['Item Id', 'Product Name', 'Price', 'Department', '# in Stock'],
+        style: {
+            head: ['blue'],
+            compact: false,
+            colAligns: ['center'],
+        }
+    });
 
-    showProducts();
+    for (var i = 0; i < res.length; i++) {
 
-    questions();
+        table.push(
 
+            [res[i].item_id, res[i].product_name, res[i].price, res.department_name, res[i].stock_quantity]
+
+        );
+
+    }
+
+    console.log(table.toString());
+
+    transaction();
 
 });
 
+var transaction = function () {
 
-function showProducts() {
+    var productInfo = {
 
-    var query = connection.query("SELECT * FROM products", function (err, res) {
+        props: {
 
-        for (var i = 0; i < res.length; i++) {
+            item_id: { description: 'Please indicate the ID of the product you would like to purchase' },
+            quant: { description: 'How many would you like to purchase?' }
 
-            console.log(res[i].item_id + " | " + res[i].product_name + " | " + res[i].department_name + " | " + "$" + res[i].price + " | " + res[i].stock_quantity);
+        },
 
-        }
+    };
 
-        console.log("======================================================");
+    prompt.start();
 
-    });
+    prompt.get(productInfo, function (err, res) {
 
-}
+        var custPurch = {
 
-function questions() {
+            item_id: res.item_id,
+            quant: res.quant
 
-    inquirer.prompt({
+        };
 
-        name: "action",
-        message: "Please indicate the ID of the product you would like to purchase",
-        choices: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
+        purchased.push(custPurch);
 
-    }).then(function (answer) {
+        connection.query('SELECT * FROM products WHERE item_id = ?', purchased[0].item_id, function (err, res) {
 
+            if (err) console.log("That item cannot be found");
 
-        switch (answer.action) {
+            if (res[0].stock_quantity < purchased[0].quant) {
 
-            case "1":
-                trans1();
-                break;
+                console.log('Sorry, we are out of that product');
+                connection.end();
 
-            case "2":
-                transactions();
-                break;
+            } else if (res[0].stock_quantity >= purchased[0].quant) {
 
-            case "3":
-                transactions();
-                break;
+                console.log('======================================================');
 
-            case "4":
-                transactions();
-                break;
+                console.log(purchased[0].quant + ' items purchased');
 
-            case "5":
-                transactions();
-                break;
+                console.log(res[0].product_name + ' ' + res[0].price);
 
-            case "6":
-                transactions();
-                break;
+                connection.query('UPDATE products SET stock_quantity = ' + newQuant + 'WHERE item_id = ' + purchased[0].item_id, function (err, res) {
 
-            case "7":
-                transactions();
-                break;
+                    console.log('======================================================');
+                    console.log('Your order has been processed. We appreciate your business!');
+                    console.log('======================================================');
 
-            case "8":
-                transactions();
-                break;
+                    connection.end();
 
-            case "9":
-                transactions();
-                break;
-
-            case "10":
-                transactions();
-                break;
-
-        }
-
-    });
-
-}
-
-function trans1() {
-
-    inquirer.prompt({
-        name: "product",
-        type: "input",
-        message: "How many units would you like?"
-    }).then(function (answer) {
-
-        var query = "UPDATE products SET ? WHERE ?";
-        connection.query(query, function (err, res) {
-
-            if (err) throw err;
-
-            for (var i = 0; i < res.length; i++) {
-
-                if (answer > this.res[i].stock_quantity) {
-
-                    console.log("Sorry, we dont have that many units.");
-
-                } else {
-
-                    console.log(this.res[i].product_name + this.res[i].price * answer);
-
-                }
+                });
 
             }
 
@@ -136,36 +110,3 @@ function trans1() {
 }
 
 
-// var query = connection.query(
-
-//     "UPDATE products SET ? WHERE ?",
-
-//     [
-//         {
-//             stock_quantity: this - answer
-//         },
-
-//         {
-//             item_ID: this.answer
-//         }
-//     ],
-//     function (err, res) {
-
-//         if (err) throw err;
-
-//         for (var i = 0; i < res.length; i++) {
-
-//             if (answer > this.res[i].stock_quantity) {
-
-//                 console.log("Sorry, we dont have that many units.");
-
-//             } else {
-
-//                 console.log(this.res[i].product_name + this.res[i].price * answer);
-
-//             }
-
-//         }
-
-//     }
-// )
